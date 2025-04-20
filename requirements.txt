@@ -1,7 +1,5 @@
 streamlit
 opencv-python
 numpy
-pillow
 tensorflow
-keras
-pyttx3 (optional for text-to-speech)
+

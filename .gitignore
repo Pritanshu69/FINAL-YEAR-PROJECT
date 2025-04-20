@@ -1,0 +1,31 @@
+# Ignore virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# TensorFlow / Keras model logs
+*.h5
+*.pb
+*.ckpt
+*.tflite
+logs/
+
+# Datasets
+data/
