@@ -2,16 +2,25 @@ import streamlit as st
 import cv2
 import numpy as np
 import os
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from utils.preprocessing import preprocess_frame
 from utils.sentence_builder import add_word, clear_sentence, get_sentence
 
-# Load model and class names
-model = load_model(os.path.join("model", "asl_model.h5"))
-class_names = ['hello', 'thanks', 'yes', 'no', 'please', 'i', 'you', 'love']  # update as needed
+# Check if the model file exists
+model_path = os.path.join("model", "asl_model.h5")
+if os.path.exists(model_path):
+    print("Model file found! Loading with TensorFlow...")
+    try:
+        # Load the model using TensorFlow
+        model = tf.keras.models.load_model(model_path)
+        print("Model loaded successfully!")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+else:
+    print("Model file not found! Check the file path.")
 
-# Text-to-Speech
-engine = pyttsx3.init()
+class_names = ['hello', 'thanks', 'yes', 'no', 'please', 'i', 'you', 'love']  # update as needed
 
 st.set_page_config(page_title="Sign Language Converter")
 st.title("🤟 Sign Language to Sentence Converter")
