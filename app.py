@@ -1,6 +1,5 @@
 import streamlit as st
 
-# ✅ Must be the first Streamlit command
 st.set_page_config(page_title="Sign Language Converter")
 
 import cv2
