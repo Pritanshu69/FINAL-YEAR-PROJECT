@@ -1,66 +1,88 @@
 import streamlit as st
+
+# ✅ Must be the first Streamlit command
+st.set_page_config(page_title="Sign Language Converter")
+
 import cv2
 import numpy as np
 import os
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+
 from utils.preprocessing import preprocess_frame
 from utils.sentence_builder import add_word, clear_sentence, get_sentence
 
-# Check if the model file exists
+# ------------------------------
+# ✅ Model loading
+# ------------------------------
 model_path = os.path.join("model", "asl_model.h5")
+model = None
+
+st.write(f"🔍 Trying to load model from: `{os.path.abspath(model_path)}`")
+
 if os.path.exists(model_path):
-    print("Model file found! Loading with TensorFlow...")
     try:
-        # Load the model using TensorFlow
         model = tf.keras.models.load_model(model_path)
-        print("Model loaded successfully!")
+        st.success("✅ Model loaded successfully!")
     except Exception as e:
-        print(f"Error loading model: {e}")
+        st.error(f"❌ Error loading model: {e}")
 else:
-    print("Model file not found! Check the file path.")
+    st.error("❌ Model file not found! Please check the path.")
 
-class_names = ['hello', 'thanks', 'yes', 'no', 'please', 'i', 'you', 'love']  # update as needed
+# ------------------------------
+# Label names - update as needed
+# ------------------------------
+class_names = ['hello', 'thanks', 'yes', 'no', 'please', 'i', 'you', 'love']
 
-st.set_page_config(page_title="Sign Language Converter")
+# ------------------------------
+# Streamlit UI
+# ------------------------------
 st.title("🤟 Sign Language to Sentence Converter")
 
-FRAME_WINDOW = st.image([])
-camera = cv2.VideoCapture(0)
-run = st.checkbox('Start Webcam')
+# Webcam control using session state
+if "camera" not in st.session_state:
+    st.session_state.camera = None
 
-if st.button("Clear Sentence"):
+run = st.checkbox("📷 Start Webcam")
+
+# Sentence buttons
+if st.button("🧹 Clear Sentence"):
     clear_sentence()
 
-if st.button("Speak Sentence"):
-    sentence = get_sentence()
-    st.success(f"🗣 Speaking: {sentence}")
-    engine.say(sentence)
-    engine.runAndWait()
-
+# Sentence output
 st.subheader("📝 Current Sentence:")
 st.write(get_sentence())
 
-while run:
-    ret, frame = camera.read()
+# Image placeholder
+FRAME_WINDOW = st.image([])
+
+# ------------------------------
+# Webcam and prediction loop
+# ------------------------------
+if run and model is not None:
+    if st.session_state.camera is None:
+        st.session_state.camera = cv2.VideoCapture(0)
+
+    ret, frame = st.session_state.camera.read()
     if not ret:
-        st.error("Camera not accessible")
-        break
+        st.error("❌ Unable to access camera.")
+    else:
+        frame = cv2.flip(frame, 1)
+        processed = preprocess_frame(frame)
 
-    frame = cv2.flip(frame, 1)
-    processed = preprocess_frame(frame)
-    
-    prediction = model.predict(processed)
-    predicted_word = class_names[np.argmax(prediction)]
+        prediction = model.predict(processed)
+        predicted_word = class_names[np.argmax(prediction)]
+        add_word(predicted_word)
 
-    # Add word to sentence buffer
-    add_word(predicted_word)
+        # Overlay prediction on video
+        cv2.putText(frame, f"Prediction: {predicted_word}", (10, 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-    # Display prediction on frame
-    cv2.putText(frame, f"Prediction: {predicted_word}", (10, 40),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-    FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-
-camera.release()
-
+# ------------------------------
+# Cleanup on stop
+# ------------------------------
+else:
+    if st.session_state.camera is not None:
+        st.session_state.camera.release()
+        st.session_state.camera = None
